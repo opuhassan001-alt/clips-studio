@@ -20,8 +20,8 @@ DEFAULTS = {
 
     # picking
     "clips": 3,                      # clips per stream
-    "min_len": 15,
-    "max_len": 59,                   # stays under the 60 s Shorts limit
+    "min_len": 30,                   # minimum length (30-45s punchy, 45-60s standard)
+    "max_len": 180,                  # up to 3 minutes (180s) for YouTube Shorts & Instagram Reels if fun/energy continues
     "part_minutes": 10,              # transcript window sent to the AI per call
     "part_overlap": 20,              # seconds shared by neighbouring windows
     "picks_per_part": 3,

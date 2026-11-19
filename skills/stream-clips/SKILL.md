@@ -99,13 +99,20 @@ streamclips clip URL --topic "GTA 6" --new-only                  # live stream: 
 | `--cookies chrome` | use the browser login: age-restricted YouTube, Kick, sub-only Twitch VODs |
 | `--layout stack/crop/blur` | force one look (default auto) |
 | `--cam x,y,w,h` | facecam box as fractions of the frame, if auto framing gets it wrong |
-| `--min / --max` | clip length limits in seconds (default 15-59) |
+| `--min / --max` | clip length limits in seconds (default 30-180; supports up to 3 min) |
 | `--language en` | skip language detection |
 | `--fast` | hardware video encoding (Apple, NVIDIA, Intel or AMD) when available |
 | `--repick` | pick moments again; keeps the downloads |
 | `--keep-audio` | keep the stream audio afterwards (it's deleted by default) |
 
 Re-running the same command resumes. Finished steps are cached in `~/StreamClips/.cache/`.
+
+### Clip Duration & Dynamic Pacing Rules (Shorts & Reels 3-Minute Limit)
+
+YouTube Shorts (as of late 2024) and Instagram Reels support vertical videos up to **3 minutes (180 seconds)**. The clipper follows dynamic pacing rules:
+- **Continuous Entertainment / Ongoing Fun (Up to 180 seconds / 3 min):** If the joke, narrative, or excitement is continuously entertaining, **do not cut the video** mid-moment. Allow it to extend up to 180 seconds to preserve complete context.
+- **Standard Sweet Spot (45 - 60 seconds):** Minimum target range for self-contained, high-retention scenes or standard jokes.
+- **Quick Punchy / Drop in Engagement (30 - 45 seconds):** If the punchline pays off quickly or momentum drops, cut promptly between 30 and 45 seconds to keep the video fast-paced and retention high.
 
 **Language.** By default, the language is detected separately for each 10-minute block and
 each clip, so streamers who switch languages are handled.

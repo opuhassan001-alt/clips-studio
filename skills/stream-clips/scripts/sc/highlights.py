@@ -40,6 +40,10 @@ Moment types that do well for <<TOPIC>>:
 Pick at most <<K>> moments from this part. Each moment must:
   - start just before its hook, never on filler ("uh", "anyway", "so yeah", "okay so")
   - make sense with zero context and pay off before it ends
+  - follow dynamic duration logic:
+      * Continuous entertainment / ongoing fun: NEVER cut while the fun/hype is active; extend up to 180 seconds (3 min max).
+      * Standard sweet spot: 45 to 60 seconds for complete self-contained moments.
+      * Quick punchy / if momentum drops: 30 to 45 seconds.
   - be <<MIN>>-<<MAX>> seconds long, lie inside <<LO>>-<<HI>>, and not overlap another pick
 Skip sponsor reads, reading donations or subs, menus, loading screens, silence, and \
 anything whose payoff falls outside this part. An empty list [] is a fine answer when \

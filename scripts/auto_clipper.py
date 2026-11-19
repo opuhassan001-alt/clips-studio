@@ -54,8 +54,14 @@ def _ends_sentence(text: str) -> bool:
     t = text.strip()
     return bool(t) and t[-1] in (".", "!", "?", "…") or t.endswith("...")
 
-def discover_candidates(segments: list[Segment], total_duration: float, min_dur: float = 12.0, max_dur: float = 58.0) -> list[ClipCandidate]:
-    """Finds complete, self-contained thought/joke moments without cutting mid-dialogue."""
+def discover_candidates(segments: list[Segment], total_duration: float, min_dur: float = 30.0, max_dur: float = 180.0) -> list[ClipCandidate]:
+    """Finds complete, self-contained thought/joke moments without cutting mid-dialogue.
+    
+    Dynamic Pacing Rules (Shorts & Reels 3-Minute Limit):
+    - Continuous Fun / Ongoing Dialogue: Never cut early; extend up to 180s (3 min) while entertaining.
+    - Standard Sweet Spot: 45 to 60s for complete self-contained thought/scene.
+    - Quick Punchy / Engagement Drop: 30 to 45s if punchline lands fast or natural long pause.
+    """
     candidates = []
     
     if segments:
@@ -75,8 +81,20 @@ def discover_candidates(segments: list[Segment], total_duration: float, min_dur:
                 # Check if this segment completes a sentence/thought
                 sentence_finished = _ends_sentence(seg.text) or (pause_after > 1.6)
                 
-                # We want a self-contained joke or scene (at least min_dur, but under max_dur)
+                # Dynamic pacing decision
+                should_cut = False
                 if current_len >= min_dur and sentence_finished:
+                    if current_len >= 45.0:
+                        # Sweet spot (45-60s) or extended fun (up to 180s):
+                        # If a clear narrative stop / long pause occurs or reaches 60s without strong link, cut.
+                        # If exciting continuous banter/fun is still firing with short pauses, allow it to continue towards max_dur.
+                        if pause_after > 1.8 or current_len >= 60.0 or (pause_after > 1.2 and current_len >= 55.0):
+                            should_cut = True
+                    elif pause_after > 2.2:
+                        # 30-45s quick punchy cut when conversation clearly concludes
+                        should_cut = True
+                
+                if should_cut:
                     hook_title = " ".join(cur_text).strip()[:65]
                     candidates.append(ClipCandidate(
                         start=max(0.0, cur_start - 0.2),
@@ -88,14 +106,14 @@ def discover_candidates(segments: list[Segment], total_duration: float, min_dur:
                     i = j + 1
                     break
                 elif current_len >= max_dur:
-                    # Look backwards for the last finished sentence to avoid chopping mid-word
+                    # Maximum 180s boundary for YouTube Shorts & Instagram Reels
                     hook_title = " ".join(cur_text).strip()[:65]
                     candidates.append(ClipCandidate(
                         start=max(0.0, cur_start - 0.2),
                         end=min(total_duration, seg.end + 0.4),
                         score=85,
                         hook=hook_title,
-                        reason="Maximum duration boundary"
+                        reason="Maximum duration boundary (3-minute limit)"
                     ))
                     i = j + 1
                     break
@@ -116,7 +134,7 @@ def discover_candidates(segments: list[Segment], total_duration: float, min_dur:
                 break
     else:
         # Visual-based highlight chunks (for pure gameplay/action with no talking)
-        chunk_size = 28.0
+        chunk_size = 50.0
         n_chunks = max(1, math.ceil(total_duration / chunk_size))
         for idx in range(n_chunks):
             start = idx * chunk_size

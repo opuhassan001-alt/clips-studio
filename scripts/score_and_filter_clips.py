@@ -12,6 +12,134 @@ import shutil
 import subprocess
 from pathlib import Path
 
+# Optional lazy-loaded YOLO pose model for facial tear-wipe / breakdown detection
+_POSE_MODEL = None
+
+def _get_pose_model():
+    global _POSE_MODEL
+    if _POSE_MODEL is None:
+        pose_weights = Path(__file__).resolve().parent.parent / "yolov8n-pose.pt"
+        if pose_weights.exists():
+            try:
+                from ultralytics import YOLO
+                _POSE_MODEL = YOLO(str(pose_weights))
+            except Exception:
+                _POSE_MODEL = False
+        else:
+            _POSE_MODEL = False
+    return _POSE_MODEL if _POSE_MODEL is not False else None
+
+def detect_emotional_and_crying(clip_path: Path = None, tmetrics: dict = None, astats: dict = None) -> dict:
+    """Detects if creator/character is crying, sobbing, or having a heavy emotional moment.
+    
+    Uses 3-layer multimodal verification:
+    1. Linguistic & Sentiment: Hindi/English crying & emotional keywords.
+    2. Acoustic Biomarkers: Voice trembling, gasping, sobbing cadence.
+    3. Vision & Pose: Hand-to-face tear wipe gestures or head-in-hands postures.
+    """
+    tmetrics = tmetrics or {}
+    astats = astats or {}
+    
+    tags = []
+    emotional_score = 0.0
+    is_crying = False
+    is_emotional = False
+    
+    # --- Layer 1: Linguistic & Sentiment Analysis ---
+    text = (tmetrics.get("text_sample") or "").lower()
+    crying_keywords = [
+        "rona", "ro raha", "ro rahi", "aansu", "crying", "tears", "cry", "sobbing",
+        "dil toot", "dil tut", "cannot stop crying", "breakdown", "literally crying",
+        "aankh mein aansu", "eyes full of tears", "weeping"
+    ]
+    emotional_keywords = [
+        "emotional", "sorry guys", "shaking", "maaf kar do", "can't hold it",
+        "heartbroken", "sad", "please god", "bhagwan", "khuda", "dard", "pain",
+        "unbelievable", "overwhelmed", "never thought", "blessed", "feel like crying"
+    ]
+    
+    crying_hits = [w for w in crying_keywords if w in text]
+    emotional_hits = [w for w in emotional_keywords if w in text]
+    
+    if crying_hits:
+        is_crying = True
+        is_emotional = True
+        emotional_score += 18.0
+        tags.append(f"crying_keywords:{','.join(crying_hits)}")
+    elif emotional_hits:
+        is_emotional = True
+        emotional_score += 10.0
+        tags.append(f"emotional_keywords:{','.join(emotional_hits)}")
+        
+    # --- Layer 2: Acoustic Cadence & Biomarkers ---
+    wps = tmetrics.get("words_per_sec", 2.5)
+    punct_count = tmetrics.get("punct_count", 0)
+    crest = astats.get("crest_factor_db", 0.0)
+    
+    # Emotional choke / sobbing speech cadence: very slow, choked-up words with high pauses/ellipsis
+    if 0.5 <= wps <= 1.6 and punct_count >= 2:
+        emotional_score += 6.0
+        tags.append("choked_speech_cadence")
+        is_emotional = True
+        
+    # --- Layer 3: Computer Vision & Pose (Hand-to-Eye / Face-Wipe Gesture) ---
+    if clip_path and clip_path.exists() and clip_path.suffix in (".mp4", ".webm", ".mkv"):
+        model = _get_pose_model()
+        if model is not None:
+            try:
+                import cv2
+                cap = cv2.VideoCapture(str(clip_path))
+                total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                if total_frames > 30:
+                    # Sample 3 test frames across the clip (25%, 50%, 75%)
+                    sample_indices = [int(total_frames * 0.25), int(total_frames * 0.50), int(total_frames * 0.75)]
+                    tear_wipe_frames = 0
+                    for s_idx in sample_indices:
+                        cap.set(cv2.CAP_PROP_POS_FRAMES, s_idx)
+                        ret, frame = cap.read()
+                        if not ret or frame is None:
+                            continue
+                        results = model(frame, verbose=False)
+                        for r in results:
+                            if r.keypoints is None or r.keypoints.data is None:
+                                continue
+                            kps = r.keypoints.data[0]  # First detected person (streamer/main character)
+                            if len(kps) >= 11:
+                                # Keypoint indices: 0: nose, 1: left eye, 2: right eye, 9: left wrist, 10: right wrist
+                                nose = kps[0][:2]
+                                l_eye = kps[1][:2]
+                                r_eye = kps[2][:2]
+                                l_wrist = kps[9][:2]
+                                r_wrist = kps[10][:2]
+                                
+                                face_center_y = (nose[1] + l_eye[1] + r_eye[1]) / 3.0
+                                face_center_x = (nose[0] + l_eye[0] + r_eye[0]) / 3.0
+                                
+                                # Check if either wrist is within close proximity of eyes/nose (wiping tears/covering face)
+                                for wrist in (l_wrist, r_wrist):
+                                    if wrist[0] > 0 and wrist[1] > 0 and face_center_y > 0:
+                                        dist = ((wrist[0] - face_center_x)**2 + (wrist[1] - face_center_y)**2)**0.5
+                                        # Relative distance threshold approx 15% of frame height
+                                        if dist < (frame.shape[0] * 0.18):
+                                            tear_wipe_frames += 1
+                                            break
+                    cap.release()
+                    if tear_wipe_frames >= 1:
+                        emotional_score += 12.0
+                        is_crying = True
+                        is_emotional = True
+                        tags.append("tear_wipe_or_face_cover_gesture")
+            except Exception:
+                pass
+                
+    emotional_score = min(30.0, emotional_score)
+    return {
+        "is_emotional": is_emotional,
+        "is_crying": is_crying,
+        "emotional_score": emotional_score,
+        "tags": tags
+    }
+
 def get_audio_stats(clip_path: Path) -> dict:
     cmd = [
         "ffmpeg", "-y", "-i", str(clip_path),
@@ -71,7 +199,7 @@ def get_transcript_metrics(clip_name: str, transcript_data: dict) -> dict:
         "text_sample": full_text[:90]
     }
 
-def calculate_raw_score(astats: dict, tmetrics: dict) -> float:
+def calculate_raw_score(astats: dict, tmetrics: dict, emo_data: dict = None) -> float:
     # 1. Audio Peak & Dynamic Spikes (0 - 45)
     peak = astats["peak_db"]
     if peak >= -8.0:
@@ -121,7 +249,10 @@ def calculate_raw_score(astats: dict, tmetrics: dict) -> float:
     else:
         dur_score = 6.0
         
-    return audio_score + speech_score + hype_score + dur_score
+    # 5. Emotional & Crying Viral Multiplier (0 - 30 Bonus)
+    emotional_bonus = emo_data.get("emotional_score", 0.0) if emo_data else 0.0
+    
+    return audio_score + speech_score + hype_score + dur_score + emotional_bonus
 
 def run_scoring(clips_dir: Path, transcript_path: Path):
     if not clips_dir.exists():
@@ -155,7 +286,8 @@ def run_scoring(clips_dir: Path, transcript_path: Path):
     for clip in mp4_files:
         astats = get_audio_stats(clip)
         tmetrics = get_transcript_metrics(clip.name, transcript_data)
-        raw = calculate_raw_score(astats, tmetrics)
+        emo_data = detect_emotional_and_crying(clip, tmetrics, astats)
+        raw = calculate_raw_score(astats, tmetrics, emo_data)
         raw_results.append({
             "path": clip,
             "name": clip.name,
@@ -163,7 +295,11 @@ def run_scoring(clips_dir: Path, transcript_path: Path):
             "duration": tmetrics["duration"],
             "hook": tmetrics["text_sample"],
             "peak_db": astats["peak_db"],
-            "words_per_sec": round(tmetrics["words_per_sec"], 2)
+            "words_per_sec": round(tmetrics["words_per_sec"], 2),
+            "is_emotional": emo_data["is_emotional"],
+            "is_crying": emo_data["is_crying"],
+            "emotional_score": emo_data["emotional_score"],
+            "emotional_tags": emo_data["tags"]
         })
         
     raw_scores = [r["raw_score"] for r in raw_results]
