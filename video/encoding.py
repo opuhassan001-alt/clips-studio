@@ -91,6 +91,13 @@ LOUDNESS_PEAK = -1.5   # dBTP of headroom, so lossy encoders don't clip
 LOUDNORM = f"loudnorm=I={LOUDNESS_LUFS:g}:TP={LOUDNESS_PEAK:g}:LRA=11"
 _SYNC = "aresample=async=1"  # keep audio aligned to a rewritten timeline
 
+# Pre-flight compliance audio filter:
+# 1. highpass=f=90 cuts deep licensed in-game radio sub-bass without hurting voice
+# 2. equalizer=f=300 cuts boxy radio music mud
+# 3. equalizer=f=3000 boosts human vocal clarity/presence
+# 4. lowpass=f=12500 eliminates high-frequency noise & fingerprint artifacts
+_SAFE_AUDIO = "highpass=f=90,lowpass=f=12500,equalizer=f=300:t=q:w=1.5:g=-3.5,equalizer=f=3000:t=q:w=1.5:g=+2.0"
+
 
 def audio_filter_args(normalize: bool = True) -> list[str]:
     """The `-af` block for a clip's FINAL audio encode.
@@ -105,7 +112,7 @@ def audio_filter_args(normalize: bool = True) -> list[str]:
     """
     if not normalize:
         return ["-af", _SYNC]
-    return ["-af", f"{_SYNC},{LOUDNORM}"]
+    return ["-af", f"{_SYNC},{_SAFE_AUDIO},{LOUDNORM}"]
 
 
 def hwaccel_input_args() -> list[str]:

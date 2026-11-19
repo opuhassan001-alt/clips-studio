@@ -131,6 +131,7 @@ def _render_fit_blur(
         "-map", vout, "-map", "0:a:0?",
         *video_encoder_args(),
         "-c:a", "aac", "-b:a", "128k",
+        "-map_metadata", "-1",          # Wipe container tracking metadata for zero-fingerprint compliance
         *audio_filter_args(normalize),  # sync + loudness normalise (final encode)
         "-fps_mode", "cfr",          # constant output frame rate
         *final_movflags(),

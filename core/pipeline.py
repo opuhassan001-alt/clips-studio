@@ -812,6 +812,15 @@ def process_video(url: str, config: dict, db: StateDB, force: bool = False) -> l
     if (_line := _outro.summary()):
         print(f"      {_line}")
     print(f"      Done in {elapsed / 60:.1f} min ({len(rendered)} clips)")
+
+    # Auto-generate Ready-to-Post YouTube & Instagram Compliance Pack
+    try:
+        from scripts.yt_compliance_guard import process_folder
+        print("      🛡️ Triggering Automated YouTube & Instagram Pre-Flight Compliance Guard...")
+        process_folder(clip_dir)
+    except Exception as e:
+        print(f"      ⚠️ Notice: Compliance guard pass skipped: {e}")
+
     return rendered
 
 

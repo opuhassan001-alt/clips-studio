@@ -209,6 +209,19 @@ def process_video_into_clips(input_source: str, crop_mode: str = "fit_blur"):
                 render_opts=render_opts,
                 content_language="en"
             )
+
+            # Auto-bake Dynamic Context Hook Banner (Exact IShowSpeed/Reels viral style)
+            try:
+                from scripts.dynamic_hook_engine import generate_context_hook, apply_hook_banner
+                clip_text = " ".join(s.text for s in segments if s.start >= candidate.start - 0.5 and s.end <= candidate.end + 0.5)
+                hook = generate_context_hook(clip_text, topic="GTA 6")
+                enhanced_path = clip_output_dir / f"enhanced_{final_path.name}"
+                if apply_hook_banner(final_path, enhanced_path, hook):
+                    enhanced_path.replace(final_path)
+                    print(f"   [Hook Banner Baked] \"{hook}\"")
+            except Exception as hook_err:
+                print(f"   [Notice] Hook banner skipped: {hook_err}")
+
             rendered_files.append(final_path)
             print(f"   [Done] Saved to: {final_path}")
         except Exception as e:
@@ -218,6 +231,14 @@ def process_video_into_clips(input_source: str, crop_mode: str = "fit_blur"):
     print(f"SUCCESS! {len(rendered_files)} vertical clips generated in:")
     print(f"{clip_output_dir.resolve()}")
     print("="*50)
+
+    # Automatically run YouTube & Instagram Anti-Strike Compliance Guard on every cut clip
+    try:
+        from scripts.yt_compliance_guard import process_folder
+        print("\n🛡️ Triggering Automated YouTube & Instagram Pre-Flight Compliance Guard...")
+        process_folder(clip_output_dir)
+    except Exception as e:
+        print(f"⚠️ Notice: Compliance guard pass skipped: {e}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Auto multi-clip generator")

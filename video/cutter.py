@@ -52,6 +52,7 @@ def cut_clip(
         *audio_filter_args(normalize),     # sync, and loudness for a final clip
         *video_encoder_args(),  # NVENC when available, libx264 otherwise
         "-c:a", "aac", "-b:a", "128k",
+        "-map_metadata", "-1",             # Wipe container tracking metadata for zero-fingerprint compliance
         *(final_movflags() if final else ["-movflags", "+faststart"]),
     ]
     vf_parts = [p for p in (vf_extra,) if p]

@@ -94,12 +94,41 @@ def posting_sheet(outdir, video, clips, summary, lo, hi):
              "Watch every clip before posting. Only clip creators who allow it "
              "(many run paid clipping programs).", ""]
     for c in clips:
+        clip_title = (c.get('title') or video.get('title') or 'Viral Moment').replace('"', '').strip()
+        safe_yt_title = f"{clip_title} 🔥 #Shorts #Gaming"
+        if len(safe_yt_title) > 95:
+            safe_yt_title = f"{clip_title[:75]}... #Shorts"
+
+        caption_body = (c.get("caption") or "").strip()
+        tags_line = " ".join(c.get("hashtags") or ["#Gaming", "#Viral", "#Shorts"])
+        
+        yt_desc = (
+            f"{caption_body}\n\n"
+            f"Enjoyed this moment? Drop a like and subscribe for more daily clips!\n"
+            f"#Gaming #Shorts #Viral\n\n"
+            f"---\n"
+            f"Copyright Disclaimer Under Section 107 of the Copyright Act 1976, allowance is made for 'fair use' "
+            f"for purposes such as criticism, comment, news reporting, teaching, scholarship, and research. "
+            f"All trademarks belong to their respective owners. Footage shown for transformative commentary and review."
+        )
+
         lines += [f"## {c['file']}", "",
-                  f"**{c['title'] or ''}**  ",
+                  f"**{clip_title}**  ",
                   f"{c['type']} · {c['seconds']:.0f}s · score {c['score']} · from {clock(c['start'])} "
                   f"· look: {c['look']}", "",
-                  "Caption to paste:", "", "```", (c.get("caption") or "") + "\n"
-                  + " ".join(c.get("hashtags") or []), "```", "",
+                  "### 🔴 YouTube Shorts Ready-to-Paste:",
+                  f"- **Title**: `{safe_yt_title}`",
+                  f"- **Tags (Tag box only)**: `Gaming Shorts, Viral Clips, Walkthrough, Gameplay, Highlights`",
+                  "- **Description**:",
+                  "```text",
+                  yt_desc,
+                  "```",
+                  "",
+                  "### 📸 Instagram Reels Ready-to-Paste:",
+                  "```text",
+                  f"{caption_body}\n\nFollow for more clips 🎮\n\n{tags_line}",
+                  "```",
+                  "",
                   f"_Why it should work: {c.get('why') or ''}_", "", "---", ""]
     (outdir / "POSTING.md").write_text("\n".join(lines), encoding="utf-8")
     write_json(outdir / "clips.json", {"source": video, "covered": [lo, hi], "clips": clips})
