@@ -1699,7 +1699,9 @@ def _render_files(
                                  else None)
                 if sport_framing is not None:
                     framing_quality = sport_framing.pop("quality", None)
-                if crop_mode == "center":
+                if crop_mode in ("letterbox", "fit_blur"):
+                    tracking = {"mode": "fit_blur", "region": None}
+                elif crop_mode == "center":
                     tracking = {"mode": "track", "path": [(0.0, 0.5)]}
                 elif sport_framing is not None:
                     # A match (sports/): the ball and the play, not a face.
@@ -1713,12 +1715,12 @@ def _render_files(
                         intermediate,
                         model_name=tracking_cfg["detector"],
                         sample_fps=tracking_cfg["sample_fps"],
-                        force_fit_blur=(crop_mode == "letterbox"),
+                        force_fit_blur=(crop_mode in ("letterbox", "fit_blur")),
                         # On unless set off (ARCHITECTURE.md §5, video/cuts.py).
                         shot_aware=cuts.shot_aware_on(tracking_cfg),
                         no_subject=tracking_cfg.get("shot_aware_no_subject", "center"),
                     )
-                    if crop_mode == "letterbox" and tracking["mode"] == "fit_blur":
+                    if crop_mode in ("letterbox", "fit_blur") and tracking["mode"] == "fit_blur":
                         # USER-forced letterbox means "show me the WHOLE frame" —
                         # reaction/gaming mixes need both the person and the
                         # content. Cropping tight to the detected person (the

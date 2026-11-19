@@ -1,0 +1,22 @@
+{
+  "project": "GTA 6 Gameplay Continuous Series (Same-Day Release)",
+  "total_parts": 11,
+  "aspect_ratio": "9:16",
+  "resolution": "1080x1920",
+  "fps": 60,
+  "date": "2026-11-19",
+  "interval_minutes": 60,
+  "schedule": [
+    { "part": 1, "filename": "GTA6_Gameplay_Part_01.mp4", "time": "12:30" },
+    { "part": 2, "filename": "GTA6_Gameplay_Part_02.mp4", "time": "13:30" },
+    { "part": 3, "filename": "GTA6_Gameplay_Part_03.mp4", "time": "14:30" },
+    { "part": 4, "filename": "GTA6_Gameplay_Part_04.mp4", "time": "15:30" },
+    { "part": 5, "filename": "GTA6_Gameplay_Part_05.mp4", "time": "16:30" },
+    { "part": 6, "filename": "GTA6_Gameplay_Part_06.mp4", "time": "17:30" },
+    { "part": 7, "filename": "GTA6_Gameplay_Part_07.mp4", "time": "18:30" },
+    { "part": 8, "filename": "GTA6_Gameplay_Part_08.mp4", "time": "19:30" },
+    { "part": 9, "filename": "GTA6_Gameplay_Part_09.mp4", "time": "20:30" },
+    { "part": 10, "filename": "GTA6_Gameplay_Part_10.mp4", "time": "21:30" },
+    { "part": 11, "filename": "GTA6_Gameplay_Part_11.mp4", "time": "22:30" }
+  ]
+}
