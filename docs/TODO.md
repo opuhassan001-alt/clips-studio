@@ -64,6 +64,7 @@ nobody notices.
 - `#294` `#262` [2026-11-19] Merged all 30 remaining 80+ clips into `data/clips/carry_post30m_viral/`, renumbered them continuously from Part 11 to Part 40, consolidated into unified `POSTING_PACK.md` and `POSTING_PACK.json` (40 clips total with complete copy-paste metadata), and cleanly purged the empty `data/clips/kai_action_30m/` directory.
 
 ## Backlog
+- `#298` [ ] [REMINDER Nov 24, 2026 10:00 AM BDT] YouTube 9-part upload broadcast finishes (final clip Part 9 goes live Nov 23 at 10:02 PM). Remind user immediately, navigate to YouTube Studio Analytics via Kapture, analyze peak viewer spike hours, top viewed clips & retention drivers, and set data-driven posting schedule for remaining 40 clips in `data/clips/carry_post30m_viral/`.
 - `#295` `#258` `#224` `#192` `#159` `#127` `#96` `#70` `#46` `#12` [ ] Connect local LLM (e.g. Ollama `gemma:7b`) or cloud API (Gemini/OpenRouter) for end-to-end autonomous multi-moment scoring and title generation across full 2-hour gameplay streams.
 - `#296` `#259` `#225` `#193` `#160` `#128` `#97` `#71` `#47` `#13` [ ] Test Gaming/Reaction mode split-screen layout for GTA 6 streamer facecam + gameplay separation.
 - `#297` `#260` `#226` `#194` `#161` `#129` `#98` `#72` `#48` `#14` [ ] Set up automated channel monitoring / scheduled batch export for new GTA 6 videos.
