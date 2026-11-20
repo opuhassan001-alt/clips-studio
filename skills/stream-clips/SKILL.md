@@ -155,3 +155,28 @@ Settings live in `~/StreamClips/settings.json`, using any key from `scripts/sc/s
 - **"nothing strong enough"** → a low-energy stream. Try another stream, a `--focus`, or `"min_score": 25` in settings.json.
 - **Slow listening** → about 1-3 minutes per stream hour, depending on the CPU. Use `--section` for long streams.
 - **Disk** → about 0.1 GB per stream hour while working. The audio is deleted after the clips are made.
+
+---
+
+## 7. Universal Master Spec 3.0 Integration (`VIRAL_STREAM_CLIPPING_ENGINE_MASTER_SPEC.md`)
+
+Whenever executing stream clipping, the engine automatically enriches every candidate moment with the Master Specification guidelines:
+
+1. **The Dynamic Zero-Quota Principle**:
+   - Quality > Quota. Never output mediocre clips just to hit a number.
+   - Enforce `virality_score >= 8.5/10` (85/100). If no segment clears 8.5, output 0 clips to protect algorithmic account standing from the 200-view penalty pool.
+2. **Boundary Reverse-Tracking (The Catalyst Lock)**:
+   - When an acoustic or social peak occurs at time $T$, reverse-scan the transcript 15–25 seconds to identify the exact catalyst question or setup line that caused the reaction. Lock clip start to that catalyst line with a 0.3s pre-roll pad.
+3. **Information Theory Chat Consensus (Shannon Entropy Collapse)**:
+   - Monitor Chat Velocity spikes ($MPS \ge 3.5\times$) combined with Shannon Entropy collapse:
+     $$H(X) = -\sum P(x_i) \log_2 P(x_i) \le 0.8 \cdot \overline{H}$$
+     Confirming true viral consensus spam (`💀`, `LMAO`, `W`, `KEKW`) over ordinary multi-topic chatter.
+4. **Kalman-Filtered Predictive 9:16 Smooth Reframe**:
+   - `scripts/viral_engine/kalman_reframe.py` tracks facial movement with predictive Kalman smoothing, eliminating jerky camera cuts.
+5. **Kinetic `.ASS` Glowing Karaoke Subtitles**:
+   - `scripts/viral_engine/ass_karaoke.py` formats word-by-word animated pop-up scales (115%) and glowing yellow highlights in the Central Oval Safe Zone.
+6. **TikTok CRP Transformative Filter Chain**:
+   - Bypasses "Unoriginal Content" duplicate fingerprinting: 1.02x scale, unsharp mask, +5% contrast, +10% saturation, 1.01x pitch-neutral atempo, EBU R128 loudness mastering (-14 LUFS).
+7. **TikTok SEO: The Rule of Three (Blue Search Bar)**:
+   - Synchronizes Spoken Hook (first 3s), On-screen Title (Frame 1), and Caption Description (Line 1) to match high-volume search queries and trigger the clickable Blue Search Bar.
+

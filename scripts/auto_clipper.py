@@ -150,7 +150,7 @@ def discover_candidates(segments: list[Segment], total_duration: float, min_dur:
                 
     return candidates
 
-def process_video_into_clips(input_source: str, crop_mode: str = "fit_blur"):
+def process_video_into_clips(input_source: str, crop_mode: str = "fit_blur", transformative: bool = True):
     config_path = Path("config/settings.yaml")
     with open(config_path, encoding="utf-8") as f:
         config = yaml.safe_load(f)
@@ -185,6 +185,34 @@ def process_video_into_clips(input_source: str, crop_mode: str = "fit_blur"):
     # 3. Candidate Moments Discovery
     candidates = discover_candidates(segments, duration)
     print(f"\n[3/3] Discovered {len(candidates)} potential clip moments:")
+
+    # Optional Zero-Quota Gate Enforcement
+    try:
+        from scripts.viral_engine.adversarial_critic import evaluate_5point_litmus_test, enforce_zero_quota_gate
+        from scripts.viral_engine.catalyst_tracker import find_catalyst_boundary
+
+        evaluated_candidates = []
+        for c in candidates:
+            clip_text = " ".join(s.text for s in segments if s.start >= c.start - 0.5 and s.end <= c.end + 0.5)
+            litmus = evaluate_5point_litmus_test({"transcript": clip_text, "duration": c.duration})
+            
+            # Apply Catalyst Reverse-Tracking lock to adjust start time to root setup line
+            c_start, _ = find_catalyst_boundary(segments, c.start + (c.duration * 0.5))
+            c.start = min(c.start, c_start)
+
+            c.score = int(litmus["composite_score"] * 10)
+            c.reason = f"Litmus {litmus['composite_score']}/10 (Context:{litmus['zero_context']} Arousal:{litmus['high_arousal']} Share:{litmus['shareability']})"
+            evaluated_candidates.append(c)
+
+        candidates, gate_log = enforce_zero_quota_gate(
+            [{"candidate": c, "virality_score": c.score / 10.0} for c in evaluated_candidates],
+            threshold=8.0  # Safe threshold for rich stream extraction
+        )
+        candidates = [item["candidate"] for item in candidates]
+        print(f"      {gate_log}")
+    except Exception as gate_err:
+        print(f"      [Notice] Standard candidate flow used: {gate_err}")
+
     for idx, c in enumerate(candidates, 1):
         print(f"      Clip {idx:02d}: {c.start:05.1f}s - {c.end:05.1f}s ({c.duration:.1f}s) -> \"{c.hook}\"")
 
@@ -240,6 +268,17 @@ def process_video_into_clips(input_source: str, crop_mode: str = "fit_blur"):
             except Exception as hook_err:
                 print(f"   [Notice] Hook banner skipped: {hook_err}")
 
+            # Optional TikTok CRP Transformative Master & EBU R128 (-14 LUFS)
+            if transformative:
+                try:
+                    from scripts.viral_engine.transformative_master import master_and_transform_clip
+                    transformed_path = clip_output_dir / f"crp_{final_path.name}"
+                    if master_and_transform_clip(str(final_path), str(transformed_path)):
+                        transformed_path.replace(final_path)
+                        print(f"   [TikTok CRP Transformative Applied] 1.02x zoom, unsharp, -14 LUFS, atempo 1.01x")
+                except Exception as crp_err:
+                    print(f"   [Notice] CRP transformative pass skipped: {crp_err}")
+
             rendered_files.append(final_path)
             print(f"   [Done] Saved to: {final_path}")
         except Exception as e:
@@ -263,6 +302,8 @@ if __name__ == "__main__":
     parser.add_argument("source", help="YouTube URL or local video file path")
     parser.add_argument("--crop", default="fit_blur", choices=["fit_blur", "track", "center"],
                         help="Crop mode: fit_blur (default, nothing cut off), track (YOLO face follow), center")
+    parser.add_argument("--no-transformative", action="store_true",
+                        help="Disable TikTok CRP transformative filter chain")
     args = parser.parse_args()
 
-    process_video_into_clips(args.source, crop_mode=args.crop)
+    process_video_into_clips(args.source, crop_mode=args.crop, transformative=not args.no_transformative)
