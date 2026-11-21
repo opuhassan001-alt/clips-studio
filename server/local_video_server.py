@@ -4,7 +4,7 @@ import os
 import sys
 
 PORT = 8766
-DIRECTORY = r"E:\work station\gta 6\data\clips\speed_gta6_top4_viral"
+DIRECTORY = r"E:\work station\gta 6\data\clips\speed_gta6_viral"
 
 class CORSHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
