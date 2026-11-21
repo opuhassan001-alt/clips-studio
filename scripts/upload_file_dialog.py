@@ -1,51 +1,40 @@
 import sys
 import time
-import win32gui
-import win32con
+import os
+import ctypes
 
-def handle_open_dialog(filepath, timeout=15):
+user32 = ctypes.windll.user32
+
+WM_SETTEXT = 0x000C
+WM_COMMAND = 0x0111
+
+def handle_open_dialog(filepath, timeout=20):
     print(f"Waiting for Open dialog (timeout {timeout}s)...")
     start = time.time()
     while time.time() - start < timeout:
-        # Search for #32770 dialog
-        def enum_cb(hwnd, results):
-            if win32gui.IsWindowVisible(hwnd):
-                title = win32gui.GetWindowText(hwnd)
-                cls = win32gui.GetClassName(hwnd)
-                if cls == "#32770" or "Open" in title:
-                    results.append((hwnd, title))
-            return True
-
-        dialogs = []
-        win32gui.EnumWindows(enum_cb, dialogs)
-        
-        for hwnd, title in dialogs:
-            # Look for Edit control
-            edit = None
-            cb_ex = win32gui.FindWindowEx(hwnd, 0, "ComboBoxEx32", None)
+        hwnd = user32.FindWindowW("#32770", None)
+        if hwnd:
+            # Look for ComboBoxEx32 -> ComboBox -> Edit
+            cb_ex = user32.FindWindowExW(hwnd, 0, "ComboBoxEx32", None)
+            edit = 0
             if cb_ex:
-                cb = win32gui.FindWindowEx(cb_ex, 0, "ComboBox", None)
+                cb = user32.FindWindowExW(cb_ex, 0, "ComboBox", None)
                 if cb:
-                    edit = win32gui.FindWindowEx(cb, 0, "Edit", None)
+                    edit = user32.FindWindowExW(cb, 0, "Edit", None)
             if not edit:
-                edit = win32gui.FindWindowEx(hwnd, 0, "Edit", None)
+                edit = user32.FindWindowExW(hwnd, 0, "Edit", None)
 
             if edit:
-                print(f"Found dialog hwnd: {hwnd} ('{title}'), edit control: {edit}")
-                # Set text to filepath
-                win32gui.SendMessage(edit, win32con.WM_SETTEXT, None, str(filepath))
+                print(f"Found dialog hwnd: {hwnd}, edit control: {edit}")
+                user32.SendMessageW(edit, WM_SETTEXT, 0, str(filepath))
                 time.sleep(0.3)
-                # Press Enter or click Open
-                win32gui.PostMessage(hwnd, win32con.WM_COMMAND, 1, 0)
+                user32.PostMessageW(hwnd, WM_COMMAND, 1, 0)
                 print("Submitted filepath successfully!")
                 return True
-        time.sleep(0.5)
+        time.sleep(0.3)
     print("Timeout: Open dialog did not appear.")
     return False
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        path = sys.argv[1]
-    else:
-        path = r"E:\work station\gta 6\data\clips\carry_post30m_viral\clip_00995-01018.mp4"
+    path = sys.argv[1] if len(sys.argv) > 1 else ""
     handle_open_dialog(path)
